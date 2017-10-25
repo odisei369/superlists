@@ -3,12 +3,36 @@ import unittest
 import time
 from selenium.webdriver.common.keys import Keys
 
+class ItemModelTest(TestCase):
+	def test_saving_and_retrieving_items(self):
+		first_item = Item()
+		first_item.text = 'The first (ever) list item'
+		first_item.save()
+
+		second_item = Item()
+		second_item.text = 'Item the second'
+		second_item.save()
+
+		saved_items = Item.objects.all()
+		self.assertEqual(saved_items.count(), 2)
+
+		first_saved_item = saved_items[0]
+		second_saved_item = saved_items[1]
+		self.assertEqual(first_saved_item.text, 'The first (ever) list item')
+		self.assertEqual(second_saved_item.text, 'Item the second')
+
+
 class NewVisitorTest(unittest.TestCase):
 	def setUp(self):
 		self.browser = webdriver.Firefox()
 
 	def tearDown(self):
 		self.browser.quit()
+
+	def check_for_row_in_list_table(self, row_text):
+		table = self.browser.find_element_by_id('id_list_table')
+		rows = table.find_elements_by_tag_name('tr')
+		self.assertIn(row_text, [row.text for row in rows])
 
 	def test_can_start_a_list_and_retrieve_it_later(self):
 		self.browser.get('http://localhost:8000')
@@ -28,20 +52,15 @@ class NewVisitorTest(unittest.TestCase):
 		inputbox.send_keys(Keys.ENTER)
 		time.sleep(1)
 
-		table = self.browser.find_element_by_id('id_list_table')
-		rows = table.find_elements_by_tag_name('tr')
-		self.assertIn('Buy peacock feathers', [row.text for row in rows])
+		self.check_for_row_in_list_table('Buy peacock feathers');
 
 		inputbox = self.browser.find_element_by_id('id_new_item')
 		inputbox.send_keys('Use peacock feathers to make a fly')
 		inputbox.send_keys(Keys.ENTER)
 		time.sleep(1)
 
-		table = self.browser.find_element_by_id('id_list_table')
-		rows = table.find_elements_by_tag_name('tr')
-		self.assertIn('Buy peacock feathers', [row.text for row in rows])
-		self.assertIn('Use peacock feathers to make a fly', [row.text for row in rows])
-
+		self.check_for_row_in_list_table('Buy peacock feathers');
+		self.check_for_row_in_list_table('Use peacock feathers to make a fly');
 		self.fail('Finish the test!')
 
 if __name__ == '__main__':
