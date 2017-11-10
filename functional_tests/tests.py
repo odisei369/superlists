@@ -26,6 +26,43 @@ class NewVisitorTest(LiveServerTestCase):
 					raise e
 				time.sleep(0.5)
 		
+	def test_multiple_users_can_start_lists_at_different_urls(self):
+		self.browser.get(self.live_server_url)
+		inputbox = self.browser.find_element_by_id('id_new_item')
+		inputbox.send_keys('Buy peacock feathers')
+		inputbox.send_keys(Keys.ENTER)
+		self.wait_for_row_in_list_table('1: Buy peacock feathers')
+
+		edith_list_url = self.browser.current_url
+		self.assertRegex(edith_list_url, '/lists/.+')
+
+		# Now a new user come along
+		# We use new browser instance to make sure that there is no cookies
+		self.browser.quit()
+		self.browser = webdriver.Firefox()
+
+		# make sure he doesn't see edith list
+		self.browser.get(self.live_server_url)
+		page_text = self.browser.find_element_by_tag_name('body').text
+		self.assertNotIn('Buy peacock feathers', page_text)
+		self.assertNotIn('make a fly', page_text)
+
+		# he add his todos
+		inputbox = self.browser.find_element_by_id('id_new_item')
+		inputbox.send_keys('Buy milk')
+		inputbox.send_keys(Keys.ENTER)
+		self.wait_for_row_in_list_table('1: Buy milk')
+
+		# he get his own URL
+		francis_list_url = self.browser.current_url
+		self.assertRegex(francis_list_url, '/lists/.+')
+		self.assertNotEqual(francis_list_url, edith_list_url)
+
+		# Again there is no trace of Edith's list
+		page_text = self.browser.find_element_by_tag_name('body').text
+		self.assertNotIn('Buy peacock feathers'. page_text)
+		self.assertIn('Buy milk', page_text) 
+
 
 	def test_can_start_a_list_and_retrieve_it_later(self):
 		self.browser.get(self.live_server_url)
